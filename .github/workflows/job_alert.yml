@@ -1,31 +1,31 @@
-name: Daily Job Alert Email
+name: Daily Job Alert Bot
 
 on:
   schedule:
-    - cron: '30 3 * * *'   # 9:00 AM IST (03:30 UTC)
+    - cron: '30 3 * * *'   # 9:00 AM IST
   workflow_dispatch:
 
 jobs:
-  send-job-alert:
+  job-alert:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
-      - name: Run job alert script
+      - name: Run job bot
         env:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
-        run: |
-          python job_alert.py
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python job_alert.py
