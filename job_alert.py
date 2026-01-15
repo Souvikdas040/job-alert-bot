@@ -101,16 +101,40 @@ def wellfound_jobs():
 
 def naukri_jobs():
     jobs = []
-    feed = feedparser.parse("https://www.naukri.com/software-engineer-fresher-jobs-in-india-rss")
-    for e in feed.entries:
-        if valid_job(e.title, e.summary):
-            jobs.append({
-                "company": "Various (Naukri)",
-                "title": e.title,
-                "location": "India",
-                "skills": "Java, MERN",
-                "link": e.link
-            })
+    feed_url = "https://www.naukri.com/software-engineer-fresher-jobs-in-india-rss"
+
+    try:
+        response = requests.get(
+            feed_url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "application/rss+xml,application/xml"
+            },
+            timeout=15
+        )
+
+        if response.status_code != 200:
+            print("Naukri RSS blocked or unavailable")
+            return jobs
+
+        feed = feedparser.parse(response.content)
+
+        for entry in feed.entries:
+            title = entry.get("title", "")
+            summary = entry.get("summary", "")
+
+            if valid_job(title, summary):
+                jobs.append({
+                    "company": "Various (Naukri)",
+                    "title": title,
+                    "location": "India",
+                    "skills": "Java, MERN",
+                    "link": entry.get("link", "#")
+                })
+
+    except Exception as e:
+        print(f"Naukri fetch failed: {e}")
+
     return jobs
 
 # -----------------------------------
@@ -138,7 +162,26 @@ def html_email(full, intern):
 # MAIN
 # -----------------------------------
 def main():
-    jobs = linkedin_jobs() + wellfound_jobs() + naukri_jobs()
+    jobs = []
+
+    try:
+        jobs.extend(linkedin_jobs())
+    except Exception as e:
+        print(f"LinkedIn failed: {e}")
+
+    try:
+        jobs.extend(wellfound_jobs())
+    except Exception as e:
+        print(f"Wellfound failed: {e}")
+
+    try:
+        jobs.extend(naukri_jobs())
+    except Exception as e:
+        print(f"Naukri failed: {e}")
+
+    if not jobs:
+        send_email("<p>No jobs fetched today.</p>")
+        return
 
     seen, unique = set(), []
     for j in jobs:
@@ -153,6 +196,3 @@ def main():
 
     send_email(html_email(full, intern))
     send_telegram(unique)
-
-if __name__ == "__main__":
-    main()
